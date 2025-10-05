@@ -1,4 +1,5 @@
 import logging
+import random
 import time
 from collections.abc import AsyncGenerator
 from typing import NamedTuple, cast
@@ -75,7 +76,12 @@ async def get_camoufox() -> AsyncGenerator[CamoufoxDepClass, None]:
     ) as browser_raw:
         # Cast to Browser since AsyncCamoufox always returns a Browser, not BrowserContext
         browser = cast("Browser", browser_raw)
-        context = await browser.new_context()
+        # Randomize viewport dimensions
+        viewport_width = random.randint(1280, 1920)
+        viewport_height = random.randint(720, 1080)
+        context = await browser.new_context(
+            viewport={"width": viewport_width, "height": viewport_height}
+        )
         page = await context.new_page()
         async with ClickSolver(
             framework=FrameworkType.CAMOUFOX,

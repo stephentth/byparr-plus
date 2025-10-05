@@ -1,4 +1,5 @@
 import time
+import random
 import warnings
 from asyncio import wait_for
 from http import HTTPStatus
@@ -7,12 +8,14 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from playwright_captcha import CaptchaType
+import trafilatura
 
 from src.consts import CHALLENGE_TITLES
 from src.models import (
     HealthcheckResponse,
     LinkRequest,
     LinkResponse,
+    Readability,
     Solution,
 )
 from src.utils import CamoufoxDepClass, TimeoutTimer, get_camoufox, logger
@@ -58,6 +61,9 @@ async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
 
     request.url = request.url.replace('"', "").strip()
     try:
+        await dep.page.mouse.move(random.randint(50, 200), random.randint(50, 200))
+        await dep.page.wait_for_timeout(random.randint(100, 300))
+
         page_request = await dep.page.goto(
             request.url, timeout=timer.remaining() * 1000
         )
@@ -91,6 +97,18 @@ async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
         ) from e
 
     cookies = await dep.context.cookies()
+    page_content = await dep.page.content()
+
+    # Extract readability content if enabled in request
+    readability_obj = None
+    if request.enable_readability:
+        logger.info("Extracting readability content for %s", request.url)
+        extracted_content = trafilatura.extract(page_content)
+        if extracted_content:
+            readability_obj = Readability(content=extracted_content)
+            logger.debug("Readability extraction successful (%d chars)", len(extracted_content))
+        else:
+            logger.warning("Readability extraction returned no content")
 
     return LinkResponse(
         message="Success",
@@ -100,7 +118,8 @@ async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
             status=status,
             cookies=cookies,
             headers=page_request.headers if page_request else {},
-            response=await dep.page.content(),
+            response=page_content,
+            readability=readability_obj,
         ),
         start_timestamp=start_time,
     )

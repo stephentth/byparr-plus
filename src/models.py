@@ -21,6 +21,11 @@ class LinkRequest(BaseModel):
         default=60,
         description="Maximum timeout in seconds for resolving the anti-bot challenge.",
     )
+    enable_readability: bool = Field(
+        default=False,
+        description="Enable extraction of readable content",
+        alias="enableReadability",
+    )
 
 
 class HealthcheckResponse(BaseModel):
@@ -28,6 +33,11 @@ class HealthcheckResponse(BaseModel):
     msg: str = "Byparr is working!"
     version: str = consts.VERSION
     user_agent: str
+
+
+class Readability(BaseModel):
+    model_config = {"alias_generator": to_camel, "populate_by_name": True}
+    content: str
 
 
 class Solution(BaseModel):
@@ -38,6 +48,7 @@ class Solution(BaseModel):
     user_agent: str = ""
     headers: dict[str, Any] = {}
     response: str = ""
+    readability: Readability | None = None
 
 
 class LinkResponse(BaseModel):

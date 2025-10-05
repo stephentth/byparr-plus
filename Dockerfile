@@ -17,7 +17,7 @@ WORKDIR /app
 RUN apt update && apt -y upgrade && apt install -y curl
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
-RUN uvx playwright install-deps firefox && uvx camoufox fetch
+RUN uvx playwright install-deps firefox && uvx camoufox fetch --geoip
 
 FROM base AS devcontainer
 RUN apt install -y git
